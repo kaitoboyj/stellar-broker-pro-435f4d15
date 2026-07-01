@@ -16,6 +16,7 @@ import { Route as MarketsRouteImport } from './routes/markets'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiNewsRouteImport } from './routes/api/news'
 import { Route as ApiMarketsRouteImport } from './routes/api/markets'
+import { Route as ApiBalanceRouteImport } from './routes/api/balance'
 
 const WalletRoute = WalletRouteImport.update({
   id: '/wallet',
@@ -52,6 +53,11 @@ const ApiMarketsRoute = ApiMarketsRouteImport.update({
   path: '/api/markets',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBalanceRoute = ApiBalanceRouteImport.update({
+  id: '/api/balance',
+  path: '/api/balance',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/news': typeof NewsRoute
   '/trade': typeof TradeRoute
   '/wallet': typeof WalletRoute
+  '/api/balance': typeof ApiBalanceRoute
   '/api/markets': typeof ApiMarketsRoute
   '/api/news': typeof ApiNewsRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/news': typeof NewsRoute
   '/trade': typeof TradeRoute
   '/wallet': typeof WalletRoute
+  '/api/balance': typeof ApiBalanceRoute
   '/api/markets': typeof ApiMarketsRoute
   '/api/news': typeof ApiNewsRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/news': typeof NewsRoute
   '/trade': typeof TradeRoute
   '/wallet': typeof WalletRoute
+  '/api/balance': typeof ApiBalanceRoute
   '/api/markets': typeof ApiMarketsRoute
   '/api/news': typeof ApiNewsRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/trade'
     | '/wallet'
+    | '/api/balance'
     | '/api/markets'
     | '/api/news'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/trade'
     | '/wallet'
+    | '/api/balance'
     | '/api/markets'
     | '/api/news'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/trade'
     | '/wallet'
+    | '/api/balance'
     | '/api/markets'
     | '/api/news'
   fileRoutesById: FileRoutesById
@@ -117,6 +129,7 @@ export interface RootRouteChildren {
   NewsRoute: typeof NewsRoute
   TradeRoute: typeof TradeRoute
   WalletRoute: typeof WalletRoute
+  ApiBalanceRoute: typeof ApiBalanceRoute
   ApiMarketsRoute: typeof ApiMarketsRoute
   ApiNewsRoute: typeof ApiNewsRoute
 }
@@ -172,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMarketsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/balance': {
+      id: '/api/balance'
+      path: '/api/balance'
+      fullPath: '/api/balance'
+      preLoaderRoute: typeof ApiBalanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -181,6 +201,7 @@ const rootRouteChildren: RootRouteChildren = {
   NewsRoute: NewsRoute,
   TradeRoute: TradeRoute,
   WalletRoute: WalletRoute,
+  ApiBalanceRoute: ApiBalanceRoute,
   ApiMarketsRoute: ApiMarketsRoute,
   ApiNewsRoute: ApiNewsRoute,
 }

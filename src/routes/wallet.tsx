@@ -160,14 +160,14 @@ function WalletPage() {
         </div>
       )}
 
-      {tab === "create" && lib && (
+      {tab === "create" && (
         <Modal onClose={() => setTab(null)} title="Create a new wallet">
-          <CreateForm onSubmit={onCreate} />
+          {lib ? <CreateForm onSubmit={onCreate} /> : <WalletToolsLoading />}
         </Modal>
       )}
-      {tab === "import" && lib && (
+      {tab === "import" && (
         <Modal onClose={() => setTab(null)} title="Import a wallet">
-          <ImportForm onSubmit={onImport} validate={lib.validateMnemonic} />
+          {lib ? <ImportForm onSubmit={onImport} validate={lib.validateMnemonic} /> : <WalletToolsLoading />}
         </Modal>
       )}
       {pending && (
@@ -179,6 +179,15 @@ function WalletPage() {
           />
         </Modal>
       )}
+    </div>
+  );
+}
+
+function WalletToolsLoading() {
+  return (
+    <div className="flex items-center justify-center gap-2 rounded-lg glass p-4 text-sm text-muted-foreground">
+      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+      Loading wallet tools
     </div>
   );
 }

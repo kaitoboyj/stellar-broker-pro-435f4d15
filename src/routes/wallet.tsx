@@ -277,6 +277,19 @@ function ImportForm({ onSubmit, validate }: {
 function WalletDetail({ wallet, onDelete }: { wallet: HDWallet; onDelete: () => void }) {
   const [revealed, setRevealed] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [balances, setBalances] = useState<Record<string, Balance | "loading">>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    setBalances({});
+    for (const a of wallet.addresses) {
+      setBalances((b) => ({ ...b, [a.chain]: "loading" }));
+      fetchBalance(a.chain, a.address).then((bal) => {
+        if (!cancelled) setBalances((b) => ({ ...b, [a.chain]: bal }));
+      });
+    }
+    return () => { cancelled = true; };
+  }, [wallet.id]);
 
   const copy = async (text: string, key: string) => {
     try {

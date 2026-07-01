@@ -69,14 +69,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "NovaX Exchange — Institutional-grade crypto trading & self-custody" },
+      { title: "PrimeCapital Exchange — Institutional-grade crypto trading & self-custody" },
       { name: "description", content: "Trade 500+ crypto assets with pro tools, live TradingView charts, and generate BIP39 HD wallets in your browser. Real prices, real custody." },
       { name: "theme-color", content: "#0b1024" },
-      { property: "og:title", content: "NovaX Exchange — Institutional-grade crypto trading & self-custody" },
+      { property: "og:title", content: "PrimeCapital Exchange — Institutional-grade crypto trading & self-custody" },
       { property: "og:description", content: "Trade 500+ crypto assets with pro tools, live TradingView charts, and generate BIP39 HD wallets in your browser. Real prices, real custody." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "NovaX Exchange — Institutional-grade crypto trading & self-custody" },
+      { name: "twitter:title", content: "PrimeCapital Exchange — Institutional-grade crypto trading & self-custody" },
       { name: "twitter:description", content: "Trade 500+ crypto assets with pro tools, live TradingView charts, and generate BIP39 HD wallets in your browser. Real prices, real custody." },
     ],
     links: [

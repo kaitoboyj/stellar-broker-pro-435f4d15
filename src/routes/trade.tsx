@@ -8,9 +8,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/trade")({
   head: () => ({
     meta: [
-      { title: "Trade — NovaX Terminal" },
+      { title: "Trade — PrimeCapital Terminal" },
       { name: "description", content: "Pro crypto trading terminal with live TradingView charts, order book, and market/limit orders." },
-      { property: "og:title", content: "NovaX Trading Terminal" },
+      { property: "og:title", content: "PrimeCapital Trading Terminal" },
       { property: "og:description", content: "Live TradingView charts and pro order entry, side-by-side." },
     ],
   }),

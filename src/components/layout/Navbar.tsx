@@ -1,7 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Menu, X, Zap } from "lucide-react";
+import { LogOut, Menu, User, X, Zap } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useWalletSession } from "@/hooks/useWalletSession";
+import { clearSession } from "@/lib/wallet-auth";
 
 const NAV = [
   { to: "/", label: "Home" },
@@ -13,6 +15,7 @@ const NAV = [
 export function Navbar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
+  const session = useWalletSession();
 
   return (
     <header className="sticky top-0 z-50 w-full">
@@ -23,7 +26,7 @@ export function Navbar() {
               <Zap className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
             </span>
             <span className="font-display text-lg font-semibold tracking-tight">
-              Nova<span className="text-gradient">X</span>
+              Prime<span className="text-gradient">Capital</span>
             </span>
           </Link>
 
@@ -49,18 +52,36 @@ export function Navbar() {
           </nav>
 
           <div className="hidden md:flex items-center gap-2">
-            <Link
-              to="/wallet"
-              className="rounded-md px-3.5 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Sign in
-            </Link>
-            <Link
-              to="/wallet"
-              className="rounded-md bg-[image:var(--gradient-brand)] px-4 py-2 text-sm font-semibold text-primary-foreground shadow-glow hover:opacity-90 transition"
-            >
-              Get started
-            </Link>
+            {session ? (
+              <>
+                <span className="inline-flex items-center gap-2 rounded-md glass px-3 py-2 text-sm font-medium">
+                  <User className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-foreground">{session.username}</span>
+                </span>
+                <button
+                  onClick={clearSession}
+                  className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Sign out"
+                >
+                  <LogOut className="h-3.5 w-3.5" /> Sign out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/wallet"
+                  className="rounded-md px-3.5 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Sign in with wallet
+                </Link>
+                <Link
+                  to="/wallet"
+                  className="rounded-md bg-[image:var(--gradient-brand)] px-4 py-2 text-sm font-semibold text-primary-foreground shadow-glow hover:opacity-90 transition"
+                >
+                  Get started
+                </Link>
+              </>
+            )}
           </div>
 
           <button

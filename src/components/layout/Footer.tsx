@@ -10,7 +10,7 @@ export function Footer() {
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[image:var(--gradient-brand)]">
               <Zap className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={2.5} />
             </span>
-            <span className="font-display text-base font-semibold">Nova<span className="text-gradient">X</span></span>
+            <span className="font-display text-base font-semibold">Prime<span className="text-gradient">Capital</span></span>
           </div>
           <p className="text-sm text-muted-foreground max-w-xs">
             Institutional-grade crypto trading and self-custody, in one interface.
@@ -26,7 +26,7 @@ export function Footer() {
       </div>
       <div className="border-t border-white/5">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-muted-foreground">
-          <p>© {new Date().getFullYear()} NovaX Labs. Trading crypto carries risk.</p>
+          <p>© {new Date().getFullYear()} PrimeCapital Labs. Trading crypto carries risk.</p>
           <p>Prices via CoinGecko. Wallets generated locally in your browser.</p>
         </div>
       </div>

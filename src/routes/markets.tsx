@@ -9,9 +9,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/markets")({
   head: () => ({
     meta: [
-      { title: "Live Markets — NovaX Exchange" },
+      { title: "Live Markets — PrimeCapital Exchange" },
       { name: "description", content: "Real-time prices for BTC, ETH, SOL and 500+ crypto assets. Live sparklines, market cap, and 24h changes." },
-      { property: "og:title", content: "Live Markets — NovaX" },
+      { property: "og:title", content: "Live Markets — PrimeCapital" },
       { property: "og:description", content: "Real-time crypto prices, powered by CoinGecko." },
     ],
   }),

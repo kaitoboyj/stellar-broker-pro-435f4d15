@@ -44,7 +44,7 @@ function Hero() {
             Custody it like a paranoid.
           </h1>
           <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
-            NovaX combines an institutional trading terminal with a browser-native HD wallet.
+            PrimeCapital combines an institutional trading terminal with a browser-native HD wallet.
             Real prices. Real keys. No middleman.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
@@ -86,7 +86,7 @@ function HeroPreview() {
               <span className="h-2.5 w-2.5 rounded-full bg-warning/70" />
               <span className="h-2.5 w-2.5 rounded-full bg-success/70" />
             </div>
-            <span className="ml-3 text-xs text-muted-foreground font-mono">novax.terminal / BTC-USDT</span>
+            <span className="ml-3 text-xs text-muted-foreground font-mono">prime.terminal / BTC-USDT</span>
           </div>
           <div className="hidden sm:flex gap-1 text-xs text-muted-foreground">
             {["1m", "5m", "15m", "1H", "4H", "1D"].map((t, i) => (
@@ -241,7 +241,7 @@ function FeatureGrid() {
   return (
     <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20">
       <div className="max-w-2xl">
-        <p className="text-xs uppercase tracking-widest text-primary/90 font-medium">Why NovaX</p>
+        <p className="text-xs uppercase tracking-widest text-primary/90 font-medium">Why PrimeCapital</p>
         <h2 className="mt-2 font-display text-3xl md:text-4xl font-semibold">
           Everything a trader needs.
           <br />

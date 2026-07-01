@@ -1,16 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { AlertTriangle, Check, Copy, Download, Eye, EyeOff, KeyRound, Plus, ShieldCheck, Trash2, Upload, Wallet } from "lucide-react";
+import { AlertTriangle, Check, Copy, Download, Eye, EyeOff, KeyRound, Loader2, LogIn, Plus, ShieldCheck, Trash2, Upload, User, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  isUsernameTaken,
+  loadSession,
+  lookupProfileByAddress,
+  registerWalletProfile,
+  saveSession,
+  walletAddressFor,
+} from "@/lib/wallet-auth";
+import { useWalletSession } from "@/hooks/useWalletSession";
 
 // NOTE: All wallet code is client-only. We dynamic-import to keep the SSR bundle clean.
 
 export const Route = createFileRoute("/wallet")({
   head: () => ({
     meta: [
-      { title: "Wallets — NovaX Self-Custody" },
+      { title: "Wallets — PrimeCapital Self-Custody" },
       { name: "description", content: "Generate a BIP39 HD wallet with BIP32/44/84 derivation for BTC, ETH and every EVM chain. Encrypted locally with AES." },
-      { property: "og:title", content: "NovaX Wallets" },
+      { property: "og:title", content: "PrimeCapital Wallets" },
       { property: "og:description", content: "Non-custodial HD wallets, generated in your browser." },
     ],
   }),
@@ -43,6 +52,8 @@ function WalletPage() {
   const [wallets, setWallets] = useState<HDWallet[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [tab, setTab] = useState<"create" | "import" | null>(null);
+  const [pending, setPending] = useState<{ wallet: HDWallet; mode: "create" | "import" } | null>(null);
+  const session = useWalletSession();
 
   useEffect(() => {
     import("@/lib/hdwallet").then((m) => setLib(m));
@@ -53,17 +64,22 @@ function WalletPage() {
   const onCreate = (label: string) => {
     if (!lib) return;
     const w = lib.createWallet(label || "Main Wallet");
-    setWallets((prev) => [w, ...prev]);
-    setActiveId(w.id);
     setTab(null);
+    setPending({ wallet: w, mode: "create" });
   };
 
   const onImport = (mnemonic: string, label: string) => {
     if (!lib) return;
     const w = lib.importFromMnemonic(mnemonic, label || "Imported Wallet");
+    setTab(null);
+    setPending({ wallet: w, mode: "import" });
+  };
+
+  const finalizeUsername = (w: HDWallet, username: string) => {
     setWallets((prev) => [w, ...prev]);
     setActiveId(w.id);
-    setTab(null);
+    setPending(null);
+    saveSession({ address: walletAddressFor(w.addresses), username });
   };
 
   const onDelete = (id: string) => {
@@ -73,7 +89,7 @@ function WalletPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10">
-      <Header />
+      <Header session={session} />
 
       {wallets.length === 0 && (
         <EmptyState onCreate={() => setTab("create")} onImport={() => setTab("import")} />
@@ -131,11 +147,20 @@ function WalletPage() {
           <ImportForm onSubmit={onImport} validate={lib.validateMnemonic} />
         </Modal>
       )}
+      {pending && (
+        <Modal onClose={() => setPending(null)} title="Choose your username">
+          <UsernameForm
+            wallet={pending.wallet}
+            mode={pending.mode}
+            onDone={(username) => finalizeUsername(pending.wallet, username)}
+          />
+        </Modal>
+      )}
     </div>
   );
 }
 
-function Header() {
+function Header({ session }: { session: ReturnType<typeof useWalletSession> }) {
   return (
     <div className="mb-8">
       <p className="text-xs uppercase tracking-widest text-primary/90 font-medium">Self-Custody</p>
@@ -143,9 +168,16 @@ function Header() {
         Wallets
       </h1>
       <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
-        Keys are generated and stored <span className="text-foreground">in your browser only</span>. NovaX never sees your
+        Keys are generated and stored <span className="text-foreground">in your browser only</span>. PrimeCapital never sees your
         mnemonic. BIP39 seed · BIP32 HD · BIP44 for EVM · BIP84 for Bitcoin native segwit.
       </p>
+      {session && (
+        <div className="mt-4 inline-flex items-center gap-2 rounded-lg glass px-3 py-2 text-xs">
+          <User className="h-3.5 w-3.5 text-primary" />
+          Signed in as <span className="font-semibold text-foreground">{session.username}</span>
+          <span className="text-muted-foreground font-mono">({session.address.slice(0, 6)}…{session.address.slice(-4)})</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -331,7 +363,7 @@ function WalletDetail({ wallet, onDelete }: { wallet: HDWallet; onDelete: () => 
 
         <p className="mt-4 text-xs text-muted-foreground flex items-start gap-2">
           <ShieldCheck className="h-4 w-4 shrink-0 text-success mt-0.5" />
-          This phrase never leaves your device. NovaX cannot recover it if lost.
+          This phrase never leaves your device. PrimeCapital cannot recover it if lost.
         </p>
       </div>
 
@@ -374,5 +406,112 @@ function Modal({ children, onClose, title }: { children: React.ReactNode; onClos
         {children}
       </div>
     </div>
+  );
+}
+
+function UsernameForm({
+  wallet,
+  mode,
+  onDone,
+}: {
+  wallet: HDWallet;
+  mode: "create" | "import";
+  onDone: (username: string) => void;
+}) {
+  const address = wallet.addresses.find((a) => a.chain === "ETH")?.address ?? wallet.addresses[0]?.address ?? "";
+  const [username, setUsername] = useState("");
+  const [busy, setBusy] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+  const [existing, setExisting] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const found = await lookupProfileByAddress(address);
+        if (cancelled) return;
+        if (found) {
+          setExisting(found.username);
+          setUsername(found.username);
+        }
+      } catch (e) {
+        if (!cancelled) setErr(e instanceof Error ? e.message : "Lookup failed");
+      } finally {
+        if (!cancelled) setBusy(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [address]);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr(null);
+    const clean = username.trim();
+    if (existing) {
+      onDone(existing);
+      return;
+    }
+    if (!/^[A-Za-z0-9_]{3,24}$/.test(clean)) {
+      setErr("3–24 chars, letters/numbers/underscore only.");
+      return;
+    }
+    setBusy(true);
+    try {
+      if (await isUsernameTaken(clean)) {
+        setErr("That username is taken.");
+        setBusy(false);
+        return;
+      }
+      const row = await registerWalletProfile(address, clean);
+      onDone(row.username);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Failed to register username");
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form onSubmit={submit} className="space-y-4">
+      <div className="rounded-lg glass p-3 text-xs text-muted-foreground">
+        <p className="uppercase tracking-widest text-[10px] mb-1">Wallet address</p>
+        <p className="font-mono break-all text-foreground/90">{address}</p>
+      </div>
+
+      {existing ? (
+        <div className="rounded-lg border border-success/30 bg-success/10 p-3 text-xs text-success-foreground/90 flex gap-2">
+          <Check className="h-4 w-4 shrink-0 text-success mt-0.5" />
+          <p>
+            This wallet is already registered as{" "}
+            <span className="font-semibold text-foreground">{existing}</span>. Continue to sign in.
+          </p>
+        </div>
+      ) : (
+        <label className="block">
+          <span className="text-xs uppercase tracking-widest text-muted-foreground">
+            {mode === "create" ? "Pick a username" : "Register a username for this wallet"}
+          </span>
+          <input
+            autoFocus
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="e.g. satoshi_42"
+            className="mt-1 w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+          />
+          <span className="mt-1 block text-[11px] text-muted-foreground">
+            Public. Used to log in whenever this wallet is active.
+          </span>
+        </label>
+      )}
+
+      {err && <p className="text-xs text-destructive">{err}</p>}
+
+      <button
+        disabled={busy}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[image:var(--gradient-brand)] py-2.5 text-sm font-semibold text-primary-foreground shadow-glow disabled:opacity-60"
+      >
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
+        {existing ? "Sign in" : "Register & sign in"}
+      </button>
+    </form>
   );
 }

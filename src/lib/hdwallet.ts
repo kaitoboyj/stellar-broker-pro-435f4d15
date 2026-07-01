@@ -106,7 +106,7 @@ export function importFromMnemonic(mnemonic: string, label = "Imported Wallet"):
 
 // ---- Encrypted local storage -------------------------------------------------
 
-const STORAGE_KEY = "novax:wallets:v1";
+const STORAGE_KEY = "prime:wallets:v1";
 
 interface StoredWallet {
   id: string;

@@ -1,7 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { AlertTriangle, Check, Copy, Download, Eye, EyeOff, KeyRound, Plus, ShieldCheck, Trash2, Upload, Wallet } from "lucide-react";
+import { AlertTriangle, Check, Copy, Download, Eye, EyeOff, KeyRound, Loader2, LogIn, Plus, ShieldCheck, Trash2, Upload, User, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  isUsernameTaken,
+  loadSession,
+  lookupProfileByAddress,
+  registerWalletProfile,
+  saveSession,
+  walletAddressFor,
+} from "@/lib/wallet-auth";
+import { useWalletSession } from "@/hooks/useWalletSession";
 
 // NOTE: All wallet code is client-only. We dynamic-import to keep the SSR bundle clean.
 
@@ -43,6 +52,8 @@ function WalletPage() {
   const [wallets, setWallets] = useState<HDWallet[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [tab, setTab] = useState<"create" | "import" | null>(null);
+  const [pending, setPending] = useState<{ wallet: HDWallet; mode: "create" | "import" } | null>(null);
+  const session = useWalletSession();
 
   useEffect(() => {
     import("@/lib/hdwallet").then((m) => setLib(m));
@@ -53,17 +64,22 @@ function WalletPage() {
   const onCreate = (label: string) => {
     if (!lib) return;
     const w = lib.createWallet(label || "Main Wallet");
-    setWallets((prev) => [w, ...prev]);
-    setActiveId(w.id);
     setTab(null);
+    setPending({ wallet: w, mode: "create" });
   };
 
   const onImport = (mnemonic: string, label: string) => {
     if (!lib) return;
     const w = lib.importFromMnemonic(mnemonic, label || "Imported Wallet");
+    setTab(null);
+    setPending({ wallet: w, mode: "import" });
+  };
+
+  const finalizeUsername = (w: HDWallet, username: string) => {
     setWallets((prev) => [w, ...prev]);
     setActiveId(w.id);
-    setTab(null);
+    setPending(null);
+    saveSession({ address: walletAddressFor(w.addresses), username });
   };
 
   const onDelete = (id: string) => {
@@ -73,7 +89,7 @@ function WalletPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10">
-      <Header />
+      <Header session={session} />
 
       {wallets.length === 0 && (
         <EmptyState onCreate={() => setTab("create")} onImport={() => setTab("import")} />
@@ -131,11 +147,20 @@ function WalletPage() {
           <ImportForm onSubmit={onImport} validate={lib.validateMnemonic} />
         </Modal>
       )}
+      {pending && (
+        <Modal onClose={() => setPending(null)} title="Choose your username">
+          <UsernameForm
+            wallet={pending.wallet}
+            mode={pending.mode}
+            onDone={(username) => finalizeUsername(pending.wallet, username)}
+          />
+        </Modal>
+      )}
     </div>
   );
 }
 
-function Header() {
+function Header({ session }: { session: ReturnType<typeof useWalletSession> }) {
   return (
     <div className="mb-8">
       <p className="text-xs uppercase tracking-widest text-primary/90 font-medium">Self-Custody</p>
@@ -146,6 +171,13 @@ function Header() {
         Keys are generated and stored <span className="text-foreground">in your browser only</span>. PrimeCapital never sees your
         mnemonic. BIP39 seed · BIP32 HD · BIP44 for EVM · BIP84 for Bitcoin native segwit.
       </p>
+      {session && (
+        <div className="mt-4 inline-flex items-center gap-2 rounded-lg glass px-3 py-2 text-xs">
+          <User className="h-3.5 w-3.5 text-primary" />
+          Signed in as <span className="font-semibold text-foreground">{session.username}</span>
+          <span className="text-muted-foreground font-mono">({session.address.slice(0, 6)}…{session.address.slice(-4)})</span>
+        </div>
+      )}
     </div>
   );
 }

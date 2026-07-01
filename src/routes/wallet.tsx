@@ -11,6 +11,7 @@ import {
   walletAddressFor,
 } from "@/lib/wallet-auth";
 import { useWalletSession } from "@/hooks/useWalletSession";
+import { fetchBalance, type Balance } from "@/lib/balances";
 
 // NOTE: All wallet code is client-only. We dynamic-import to keep the SSR bundle clean.
 

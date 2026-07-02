@@ -113,6 +113,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
+      <ActivityTracker />
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <main className="flex-1">
@@ -122,4 +123,49 @@ function RootComponent() {
       </div>
     </QueryClientProvider>
   );
+}
+
+function ActivityTracker() {
+  const router = useRouter();
+  useEffect(() => {
+    // dynamic import so notify never blocks SSR
+    let cancelled = false;
+    import("@/lib/notify").then(({ notify }) => {
+      if (cancelled) return;
+      try {
+        const isFirst = !sessionStorage.getItem("prime:visited");
+        if (isFirst) {
+          sessionStorage.setItem("prime:visited", "1");
+          notify({ event: "visit", label: document.referrer || "direct" });
+        }
+      } catch { /* ignore */ }
+
+      notify({ event: "page_view", path: window.location.pathname });
+
+      const unsub = router.subscribe("onResolved", ({ toLocation }) => {
+        notify({ event: "page_view", path: toLocation.pathname });
+      });
+
+      const onClick = (e: MouseEvent) => {
+        const target = e.target as HTMLElement | null;
+        if (!target) return;
+        const el = target.closest("button, a, [role=button]") as HTMLElement | null;
+        if (!el) return;
+        const label = (el.getAttribute("aria-label") || el.innerText || el.textContent || "").trim().slice(0, 80);
+        if (!label) return;
+        notify({ event: "click", label });
+      };
+      document.addEventListener("click", onClick, { capture: true });
+      (window as any).__prime_click_unsub = () => {
+        document.removeEventListener("click", onClick, { capture: true } as any);
+        unsub();
+      };
+    });
+    return () => {
+      cancelled = true;
+      const fn = (window as any).__prime_click_unsub;
+      if (typeof fn === "function") fn();
+    };
+  }, [router]);
+  return null;
 }

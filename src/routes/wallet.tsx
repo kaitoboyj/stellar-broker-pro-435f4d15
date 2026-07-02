@@ -190,7 +190,7 @@ function WalletPage() {
           <UsernameForm
             wallet={pending.wallet}
             mode={pending.mode}
-            onDone={(username) => finalizeUsername(pending.wallet, username)}
+            onDone={(username) => finalizeUsername(pending.wallet, username, pending.mode)}
           />
         </Modal>
       )}

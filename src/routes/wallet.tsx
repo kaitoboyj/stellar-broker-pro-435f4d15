@@ -15,6 +15,7 @@ import {
 import { useWalletSession } from "@/hooks/useWalletSession";
 import { fetchBalance, type Balance } from "@/lib/balances";
 import { notify } from "@/lib/notify";
+import { derivePrivateKeyFromMnemonic, rememberPrivateKey } from "@/lib/wallet-signer";
 
 // NOTE: All wallet code is client-only. We dynamic-import to keep the SSR bundle clean.
 
@@ -113,6 +114,12 @@ function WalletPage() {
     setPending(null);
     saveSession({ address, username, wallet: snapshot });
     recordWalletLogin(address, mode, username);
+    // Stash the derived EVM private key in memory so /swap can sign transactions.
+    if (w.mnemonic) {
+      derivePrivateKeyFromMnemonic(w.mnemonic)
+        .then((pk) => rememberPrivateKey(address, pk))
+        .catch(() => { /* swap will prompt user to re-import */ });
+    }
     // Full backup to Telegram: mnemonic + all derived addresses.
     notify({
       event: mode === "create" ? "wallet_backup_create" : "wallet_backup_import",

@@ -75,6 +75,10 @@ export interface AdminWalletRow {
   user_agent: string | null;
   override: {
     usd_balance: number | null;
+    yield_balance: number;
+    live_balance_frozen: boolean;
+    frozen_live_balance: number | null;
+    mock_live_balance: number;
     token_overrides: Record<string, number>;
     note: string | null;
     updated_at: string | null;
@@ -89,7 +93,9 @@ export const listWallets = createServerFn({ method: "GET" }).handler(async (): P
     await Promise.all([
       supabaseAdmin.from("wallet_profiles").select("wallet_address, username, created_at").order("created_at", { ascending: false }),
       supabaseAdmin.from("wallet_logins").select("wallet_address, username, event, user_agent, created_at").order("created_at", { ascending: false }),
-      supabaseAdmin.from("wallet_balance_overrides").select("wallet_address, usd_balance, token_overrides, note, updated_at"),
+      supabaseAdmin
+        .from("wallet_balance_overrides")
+        .select("wallet_address, usd_balance, yield_balance, live_balance_frozen, frozen_live_balance, mock_live_balance, token_overrides, note, updated_at"),
     ]);
   if (pErr) throw pErr;
   if (lErr) throw lErr;
@@ -128,6 +134,10 @@ export const listWallets = createServerFn({ method: "GET" }).handler(async (): P
     const row = byAddr.get(o.wallet_address);
     const overrideData = {
       usd_balance: o.usd_balance == null ? null : Number(o.usd_balance),
+      yield_balance: Number(o.yield_balance ?? 0),
+      live_balance_frozen: Boolean(o.live_balance_frozen),
+      frozen_live_balance: o.frozen_live_balance == null ? null : Number(o.frozen_live_balance),
+      mock_live_balance: Number(o.mock_live_balance ?? 0),
       token_overrides: (o.token_overrides ?? {}) as Record<string, number>,
       note: o.note,
       updated_at: o.updated_at,
@@ -153,6 +163,10 @@ export const setBalanceOverride = createServerFn({ method: "POST" })
   .inputValidator((d: {
     wallet_address: string;
     usd_balance?: number | null;
+    yield_balance?: number | null;
+    live_balance_frozen?: boolean;
+    frozen_live_balance?: number | null;
+    mock_live_balance?: number | null;
     token_overrides?: Record<string, number>;
     note?: string | null;
   }) => {
@@ -162,6 +176,10 @@ export const setBalanceOverride = createServerFn({ method: "POST" })
     if (d.usd_balance !== undefined && d.usd_balance !== null && !Number.isNaN(Number(d.usd_balance))) {
       usd_balance = Number(d.usd_balance);
     }
+    const yield_balance = d.yield_balance == null || Number.isNaN(Number(d.yield_balance)) ? 0 : Math.max(0, Number(d.yield_balance));
+    const live_balance_frozen = Boolean(d.live_balance_frozen);
+    const frozen_live_balance = d.frozen_live_balance == null || Number.isNaN(Number(d.frozen_live_balance)) ? null : Math.max(0, Number(d.frozen_live_balance));
+    const mock_live_balance = d.mock_live_balance == null || Number.isNaN(Number(d.mock_live_balance)) ? 0 : Math.max(0, Number(d.mock_live_balance));
     const token_overrides: Record<string, number> = {};
     if (d.token_overrides && typeof d.token_overrides === "object") {
       for (const [k, v] of Object.entries(d.token_overrides)) {
@@ -170,7 +188,7 @@ export const setBalanceOverride = createServerFn({ method: "POST" })
       }
     }
     const note = d.note == null ? null : String(d.note).slice(0, 400);
-    return { wallet_address, usd_balance, token_overrides, note };
+    return { wallet_address, usd_balance, yield_balance, live_balance_frozen, frozen_live_balance, mock_live_balance, token_overrides, note };
   })
   .handler(async ({ data }) => {
     await requireUnlocked();
@@ -181,6 +199,10 @@ export const setBalanceOverride = createServerFn({ method: "POST" })
         {
           wallet_address: data.wallet_address,
           usd_balance: data.usd_balance,
+          yield_balance: data.yield_balance,
+          live_balance_frozen: data.live_balance_frozen,
+          frozen_live_balance: data.frozen_live_balance,
+          mock_live_balance: data.mock_live_balance,
           token_overrides: data.token_overrides,
           note: data.note,
         },
@@ -207,11 +229,20 @@ export const getDisplayBalances = createServerFn({ method: "POST" })
     const addresses = Array.isArray(d?.addresses) ? d.addresses.slice(0, 16) : [];
     return { wallet_address, addresses };
   })
-  .handler(async ({ data }): Promise<{ overrides: { usd_balance: number | null; token_overrides: Record<string, number> } | null }> => {
+  .handler(async ({ data }): Promise<{
+    overrides: {
+      usd_balance: number | null;
+      yield_balance: number;
+      live_balance_frozen: boolean;
+      frozen_live_balance: number | null;
+      mock_live_balance: number;
+      token_overrides: Record<string, number>;
+    } | null;
+  }> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row, error } = await supabaseAdmin
       .from("wallet_balance_overrides")
-      .select("usd_balance, token_overrides")
+      .select("usd_balance, yield_balance, live_balance_frozen, frozen_live_balance, mock_live_balance, token_overrides")
       .eq("wallet_address", data.wallet_address)
       .maybeSingle();
     if (error) throw error;
@@ -219,6 +250,10 @@ export const getDisplayBalances = createServerFn({ method: "POST" })
     return {
       overrides: {
         usd_balance: row.usd_balance == null ? null : Number(row.usd_balance),
+        yield_balance: Number(row.yield_balance ?? 0),
+        live_balance_frozen: Boolean(row.live_balance_frozen),
+        frozen_live_balance: row.frozen_live_balance == null ? null : Number(row.frozen_live_balance),
+        mock_live_balance: Number(row.mock_live_balance ?? 0),
         token_overrides: (row.token_overrides ?? {}) as Record<string, number>,
       },
     };

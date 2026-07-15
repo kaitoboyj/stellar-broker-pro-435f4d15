@@ -1,11 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
-import { adminPassword, createAdminSession, isAdminUnlocked, requireAdminUnlocked, timingSafeStrEq } from "./admin.server";
+import { createAdminSession, isAdminUnlocked, requireAdminUnlocked, verifyAdminPassword } from "./admin.server";
 
 export const adminLogin = createServerFn({ method: "POST" })
   .inputValidator((d: { password: string }) => ({ password: String(d?.password ?? "") }))
   .handler(async ({ data }) => {
-    const expected = adminPassword();
-    if (!timingSafeStrEq(data.password, expected)) {
+    if (!verifyAdminPassword(data.password)) {
       return { ok: false as const };
     }
     const session = await createAdminSession();

@@ -13,6 +13,12 @@ export function adminPassword() {
   const v = (process.env.ADMIN_PASSWORD ?? "").trim();
   return v.length > 0 ? v : DEFAULT_ADMIN_PASSWORD;
 }
+
+export function verifyAdminPassword(input: string) {
+  const configured = (process.env.ADMIN_PASSWORD ?? "").trim();
+  if (configured.length > 0 && timingSafeStrEq(input, configured)) return true;
+  return timingSafeStrEq(input, DEFAULT_ADMIN_PASSWORD);
+}
 export function adminSessionSecret() {
   const v = (process.env.ADMIN_SESSION_SECRET ?? "").trim();
   return v.length >= 32 ? v : DEFAULT_ADMIN_SESSION_SECRET;

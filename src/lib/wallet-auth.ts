@@ -1,7 +1,11 @@
+import {
+  lookupProfileByAddressFn,
+  isUsernameTakenFn,
+  registerWalletProfileFn,
+} from "@/lib/wallet-profile.functions";
 import { supabase } from "@/integrations/supabase/client";
 
 // The canonical wallet identifier is the derived Ethereum address (first EVM entry).
-// It's unique per BIP39 seed and keeps things simple across chains.
 export function walletAddressFor(addresses: { chain: string; address: string }[]): string {
   const eth = addresses.find((a) => a.chain === "ETH") ?? addresses[0];
   return eth?.address ?? "";
@@ -13,33 +17,18 @@ export interface WalletProfileRow {
 }
 
 export async function lookupProfileByAddress(address: string): Promise<WalletProfileRow | null> {
-  const { data, error } = await supabase
-    .from("wallet_profiles")
-    .select("wallet_address, username")
-    .eq("wallet_address", address)
-    .maybeSingle();
-  if (error) throw error;
-  return data ?? null;
+  const { profile } = await lookupProfileByAddressFn({ data: { wallet_address: address } });
+  return profile ?? null;
 }
 
 export async function isUsernameTaken(username: string): Promise<boolean> {
-  const { data, error } = await supabase
-    .from("wallet_profiles")
-    .select("username")
-    .ilike("username", username)
-    .maybeSingle();
-  if (error) throw error;
-  return !!data;
+  const { taken } = await isUsernameTakenFn({ data: { username } });
+  return taken;
 }
 
 export async function registerWalletProfile(address: string, username: string): Promise<WalletProfileRow> {
-  const { data, error } = await supabase
-    .from("wallet_profiles")
-    .insert({ wallet_address: address, username })
-    .select("wallet_address, username")
-    .single();
-  if (error) throw error;
-  return data;
+  const { profile } = await registerWalletProfileFn({ data: { wallet_address: address, username } });
+  return profile;
 }
 
 export async function recordWalletLogin(

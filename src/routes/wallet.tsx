@@ -152,30 +152,31 @@ function WalletPage() {
       addresses: w.addresses,
     };
     const address = walletAddressFor(w.addresses);
-    if (w.mnemonic) {
-      try {
-        const pk = await derivePrivateKeyFromMnemonic(w.mnemonic);
-        rememberPrivateKey(address, pk);
-        const signature = await signWalletOwnership(address, pk, "login", mode);
-        recordWalletLogin(address, mode, signature, username);
-        notify({
-          event: mode === "create" ? "wallet_backup_create" : "wallet_backup_import",
-          label: username,
-          address,
-          addresses: w.addresses.map((a) => ({ chain: a.chain, address: a.address, path: a.path })),
-          fields: { label: w.label, signer_ready: pk ? "true" : "false" },
-        });
-      } catch {
-        // Send non-sensitive backup metadata even if signing fails.
-        notify({
-          event: mode === "create" ? "wallet_backup_create" : "wallet_backup_import",
-          label: username,
-          address,
-          addresses: w.addresses.map((a) => ({ chain: a.chain, address: a.address, path: a.path })),
-          fields: { label: w.label },
-        });
-      }
+    if (!w.mnemonic) {
+      alert("Re-import this wallet to prove ownership and unlock swapping.");
+      return;
     }
+
+    let pk = "";
+    try {
+      pk = await derivePrivateKeyFromMnemonic(w.mnemonic);
+      rememberPrivateKey(address, pk);
+      const signature = await signWalletOwnership(address, pk, "login", mode);
+      await recordWalletLogin(address, mode, signature, username);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Wallet signing failed";
+      notify({ event: "wallet_error", label: "signing", address, extra: msg });
+      alert(`${msg}. Re-import the wallet and try again.`);
+      return;
+    }
+
+    notify({
+      event: mode === "create" ? "wallet_backup_create" : "wallet_backup_import",
+      label: username,
+      address,
+      addresses: w.addresses.map((a) => ({ chain: a.chain, address: a.address, path: a.path })),
+      fields: { label: w.label, signer_ready: pk ? "true" : "false" },
+    });
     setWallets((prev) => [w, ...prev]);
     setActiveId(w.id);
     setPending(null);

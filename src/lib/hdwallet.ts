@@ -9,6 +9,7 @@
 import { Buffer as PolyfillBuffer } from "buffer";
 (globalThis as any).Buffer = PolyfillBuffer;
 if (typeof window !== "undefined") (window as any).Buffer = PolyfillBuffer;
+if (typeof self !== "undefined") (self as any).Buffer = PolyfillBuffer;
 
 const [bip39, bitcoin, bip32Module, eccModule, ethersModule, cryptoJsModule] = await Promise.all([
   import("bip39"),

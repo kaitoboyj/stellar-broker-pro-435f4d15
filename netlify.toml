@@ -6,6 +6,12 @@ publish = ".output/public"
 NODE_VERSION = "20"
 NITRO_PRESET = "netlify"
 
+[build.processing]
+skip_processing = false
+
+[functions]
+node_bundler = "esbuild"
+
 # All app env vars live in .env at the repo root and are committed on
 # purpose so `git clone && bun install && bun dev` works standalone.
 # Netlify picks them up automatically during the build.
